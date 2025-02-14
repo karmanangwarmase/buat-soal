@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Aplikasi Buat Soal</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .soal { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding: 10px; }
+        .admin-panel { background-color: #f5f5f5; padding: 20px; border-radius: 5px; }
+        input[type="text"], textarea { width: 100%; padding: 8px; margin: 5px 0; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="admin-panel">
+        <h2>Panel Admin</h2>
+        <button onclick="toggleAdminPanel()">Buat Soal</button>
+        <button onclick="resetUjian()">Reset Soal</button>
+        <button onclick="downloadSoal()">Download Soal</button>
+        <input type="file" id="uploadSoal" onchange="uploadSoal(event)">
+        <div id="adminForm" class="hidden">
+            <h3>Tambah Soal Baru</h3>
+<h5>Untuk memasukan gambar copy dan paste rumus di bawa, ganti gambar1.png dengan nama gambar, <'br'> jarak spasi.
+    <div class="code-container" id="code">
+        &lt;br&gt;&lt;br&gt;&lt;img src="gambar1.png" width="200" height="200"&gt;&lt;br&gt;gambar 1&lt;br&gt;
+    </div></h5>
+            Soal<input type="text" id="pertanyaan" placeholder="Pertanyaan">
+            pilihan a,b,c<input type="text" id="opsi1" placeholder="Opsi A">
+            <input type="text" id="opsi2" placeholder="Opsi B">
+            <input type="text" id="opsi3" placeholder="Opsi C">
+            pilihan d & e<input type="text" id="opsi4" placeholder="Opsi D">
+            <input type="text" id="opsi5" placeholder="Opsi E">
+            <input type="text" id="jawaban" placeholder="Jawaban Benar (a-e)">
+            <button onclick="tambahSoal()">Simpan Soal</button>
+        </div>
+    </div>
+
+    <h3>Lihat Soal</h3>
+    <div id="daftarSoal"></div>
+    <div id="hasil"></div>
+
+    <script>
+        let soalUjian = JSON.parse(localStorage.getItem('soalUjian')) || [];
+
+        function toggleAdminPanel() {
+            document.getElementById('adminForm').classList.toggle('hidden');
+        }
+
+       function tambahSoal() {
+    const soal = {
+        question: document.getElementById('pertanyaan').value,
+        options: [
+            { label: document.getElementById('opsi1').value, value: "a" },
+            { label: document.getElementById('opsi2').value, value: "b" },
+            { label: document.getElementById('opsi3').value, value: "c" },
+            { label: document.getElementById('opsi4').value, value: "d" },
+            { label: document.getElementById('opsi5').value, value: "e" }
+        ],
+        answer: document.getElementById('jawaban').value
+    };
+    soalUjian.unshift(soal); // Menambahkan soal baru di awal array
+    localStorage.setItem('soalUjian', JSON.stringify(soalUjian));
+    tampilkanSoal();
+}
+
+function tampilkanSoal() {
+    const container = document.getElementById('daftarSoal');
+    container.innerHTML = '';
+    soalUjian.forEach((soal, index) => {
+        let opsiHTML = soal.options.map(opt => `<li>${opt.value.toUpperCase()}: ${opt.label}</li>`).join('');
+        container.innerHTML += `
+            <div class="soal">
+                <h4>Soal ${index + 1}: ${soal.question}</h4>
+                <ul>${opsiHTML}</ul>
+                <p><strong>Jawaban Benar:</strong> ${soal.answer.toUpperCase()}</p>
+                <button onclick="hapusSoal(${index})">Hapus</button>
+            </div>
+        `;
+    });
+}
+
+        function hapusSoal(index) {
+            soalUjian.splice(index, 1);
+            localStorage.setItem('soalUjian', JSON.stringify(soalUjian));
+            tampilkanSoal();
+        }
+
+        function resetUjian() {
+            localStorage.removeItem('soalUjian');
+            soalUjian = [];
+            tampilkanSoal();
+            document.getElementById('hasil').innerHTML = '';
+        }
+
+        function downloadSoal() {
+            let fileName = prompt("Masukkan nama file untuk menyimpan soal:", "");
+            if (!fileName) return; // Jika pengguna membatalkan prompt, keluar dari fungsi
+
+            let formattedSoal = soalUjian.map(soal => `{
+                question: "${soal.question}",
+                options: [
+                    { label: "${soal.options[0].label}", value: "${soal.options[0].value}" },
+                    { label: "${soal.options[1].label}", value: "${soal.options[1].value}" },
+                    { label: "${soal.options[2].label}", value: "${soal.options[2].value}" },
+                    { label: "${soal.options[3].label}", value: "${soal.options[3].value}" },
+		    { label: "${soal.options[4].label}", value: "${soal.options[4].value}" }
+                ],
+                answer: "${soal.answer}"
+            },`).join('\n');
+            
+            const blob = new Blob([formattedSoal], { type: "text/plain;charset=utf-8" });
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.href = URL.createObjectURL(blob);
+            downloadAnchor.download = fileName; // Menggunakan nama file yang dimasukkan pengguna
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+        }
+
+        function uploadSoal(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    soalUjian = JSON.parse(e.target.result);
+                    localStorage.setItem('soalUjian', JSON.stringify(soalUjian));
+                    tampilkanSoal();
+                    alert("Soal berhasil diunggah!");
+                } catch (error) {
+                    alert("Format file tidak valid!");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        tampilkanSoal();
+    </script>
+</body>
+</html>
